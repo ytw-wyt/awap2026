@@ -16,3 +16,6 @@ start=0  duration=200  required=NOODLES,MEAT           reward=10000 penalty=3
 start=0  duration=200  required=NOODLES,MEAT           reward=10000 penalty=3
 start=0  duration=200  required=NOODLES,MEAT           reward=10000 penalty=3
 start=0  duration=200  required=NOODLES,MEAT           reward=10000 penalty=3
+start=0  duration=200  required=NOODLES,MEAT           reward=10000 penalty=3
+start=0  duration=200  required=NOODLES,MEAT           reward=10000 penalty=3
+start=0  duration=200  required=NOODLES,MEAT           reward=10000 penalty=3
