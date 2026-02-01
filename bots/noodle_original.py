@@ -33,8 +33,11 @@ class BotPlayer:
 
     # get list of ingredients for current order
     def get_required_ingrediants(self):
-        orders = self.get_orders()
-        self.order = orders[self.order_index]["required"]
+        orders = self.get_orders()  
+        neworder = orders[self.order_index]["required"] # list[foodtype]
+        for i in neworder:
+            self.order.append(i.food_name)
+
         self.order_index += 1
 
     def put_task_in_queue(self):
