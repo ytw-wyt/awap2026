@@ -72,7 +72,7 @@ class BotPlayer:
         l = []
         for task in tasks:
             if task == "PLATE":
-                l.append(8)
+                l = [8] + l
             elif task == "NOODLES":
                 l.append(10)
             elif task == "ONIONS":
@@ -372,6 +372,7 @@ class BotPlayer:
             if self.move_towards(controller, bot_id, kx, ky):
                 # Using the NEW logic where place() starts cooking automatically
                 if controller.place(bot_id, kx, ky):
+                    print('placed meat on cooker', self.tasks_queue)
                     self.state = self.tasks_queue.popleft()
 
         #state 7: start the cook, but is cooking so we just go
