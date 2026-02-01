@@ -345,11 +345,11 @@ class BotPlayer:
             if self.move_towards(controller, bot_id, kx, ky):
                 # Using the NEW logic where place() starts cooking automatically
                 if controller.place(bot_id, kx, ky):
-                    self.state = 8 # Skip state 7
+                    self.state = self.tasks_queue.popleft()
 
         #state 7: start the cook, but is cooking so we just go
         elif self.state == 7:
-            self.state = self.tasks_queue.popleft()
+            self.state = 8
 
         #state 8: buy the plate
         elif self.state == 8:
@@ -446,12 +446,12 @@ class BotPlayer:
                 if self.move_towards(controller, bot_id, kx, ky):
                     # Using the NEW logic where place() starts cooking automatically
                     if controller.place(bot_id, kx, ky):
-                            self.state = 19 # Skip state 7
+                        self.state = self.tasks_queue.popleft()
 
 
         #state 19: start the cook egg, but is cooking so we just go
         elif self.state == 19:
-            self.state = self.tasks_queue.popleft()
+            self.state = 20
 
 
         #state 20: wait and take egg
