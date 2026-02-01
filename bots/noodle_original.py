@@ -14,6 +14,7 @@ class BotPlayer:
         self.my_bot_id = None
 
         self.state = 0
+        self.done = True
     
         self.tasks_queue = deque()
 
@@ -22,15 +23,19 @@ class BotPlayer:
 
     # get list of ingredients for current order
     def get_required_ingrediants(self, controller: RobotController):
-        orders = controller.get_orders(controller.get_team())
-        if not orders or self.order_index >= len(orders):
-            # No more orders available, reset or return empty
-            return []
-        
-        self.order = orders[self.order_index]["required"] # list[foodtype]
-        # print('order', self.order)
-        self.order_index += 1
-        return self.order
+        if not self.done:
+            return 
+        else: 
+            orders = controller.get_orders(controller.get_team())
+            if not orders or self.order_index >= len(orders):
+                # No more orders available, reset or return empty
+                return []
+            
+            self.order = orders[self.order_index]["required"] # list[foodtype]
+            # print('order', self.order)
+            self.order_index += 1
+            self.done = False
+            return self.order
 
     def put_task_in_queue(self, controller: RobotController):
         ingredients = self.get_required_ingrediants(controller)
@@ -377,9 +382,6 @@ class BotPlayer:
             self.put_task_in_queue(controller)
             print("after q:", self.tasks_queue)
 
-            if self.state == -1:
-                return
-
         my_bots = controller.get_team_bot_ids(controller.get_team())
         if not my_bots: return
     
@@ -548,7 +550,9 @@ class BotPlayer:
             ux, uy = submit_pos
             if self.move_towards(controller, bot_id, ux, uy):
                 if controller.submit(bot_id, ux, uy):
-                    self.state = -1
+                    self.done = True
+                    if self.tasks_queue:
+                        self.state = self.tasks_queue.popleft()
 
         #state 16: trash
         elif self.state == 16:
