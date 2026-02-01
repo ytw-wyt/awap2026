@@ -39,7 +39,7 @@ To run for results:
 To run with local pygame renderer:
 
 ```bash
-    python src/game.py --red bots/duo_noodle_bot.py --blue bots/duo_noodle_bot.py --map maps/map1.txt --render
+    python src/game.py --red bots/orbit_bot.py --blue bots/noodle_original.py --map maps/map1.txt --render
 ```
 
 To save replay file:

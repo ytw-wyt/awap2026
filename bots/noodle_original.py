@@ -14,28 +14,26 @@ class BotPlayer:
         self.my_bot_id = None
 
         self.state = 0
-        self.done = True
     
         self.tasks_queue = deque()
 
         self.order = []
         self.order_index = 0
+        self.seen = set()
 
     # get list of ingredients for current order
     def get_required_ingrediants(self, controller: RobotController):
-        if not self.done:
-            return 
-        else: 
-            orders = controller.get_orders(controller.get_team())
-            if not orders or self.order_index >= len(orders):
-                # No more orders available, reset or return empty
+        orders = controller.get_orders(controller.get_team())
+        if not orders or self.order_index >= len(orders):
+            # No more orders available, reset or return empty
+            #self.order_index = 0
+            #if not orders:
                 return []
-            
-            self.order = orders[self.order_index]["required"] # list[foodtype]
-            # print('order', self.order)
-            self.order_index += 1
-            self.done = False
-            return self.order
+        
+        self.order = orders[self.order_index]["required"] # list[foodtype]
+        # print('order', self.order)
+        self.order_index += 1
+        return self.order
 
     def put_task_in_queue(self, controller: RobotController):
         ingredients = self.get_required_ingrediants(controller)
@@ -352,7 +350,6 @@ class BotPlayer:
 
 
     def play_turn(self, controller: RobotController):
-        print("task order:", self.order_index)
         if len(self.tasks_queue) == 0:
             print("hahahahah")
             # Initialize positions first
@@ -378,9 +375,8 @@ class BotPlayer:
             # Initialize cooker_loc for partition_task
             if self.cooker_loc is None:
                 self.cooker_loc = self.find_nearest_tile(controller, bx, by, "COOKER")
-            print("initial q:", self.tasks_queue)
+            
             self.put_task_in_queue(controller)
-            print("after q:", self.tasks_queue)
 
         my_bots = controller.get_team_bot_ids(controller.get_team())
         if not my_bots: return
@@ -502,12 +498,8 @@ class BotPlayer:
             # print holding 
             if self.move_towards(controller, bot_id, cx, cy):
                 if controller.add_food_to_plate(bot_id, cx, cy):
-                    # refresh snapshots from the engine (controller) so we print live state
-                    bot_info = controller.get_bot_state(bot_id)
-                    tile = controller.get_tile(controller.get_team(), cx, cy)
                     self.state = self.tasks_queue.popleft()
-                    print('after add_food_to_plate — bot holding:', bot_info.get('holding'))
-                    print('after add_food_to_plate — counter item (public):', controller.item_to_public_dict(getattr(tile, 'item', None)))
+                    print('holding item in state 11:', bot_info.get('holding'))
 
         #state 12: wait and take meat
         elif self.state == 12:
@@ -550,9 +542,7 @@ class BotPlayer:
             ux, uy = submit_pos
             if self.move_towards(controller, bot_id, ux, uy):
                 if controller.submit(bot_id, ux, uy):
-                    self.done = True
-                    if self.tasks_queue:
-                        self.state = self.tasks_queue.popleft()
+                    self.state = self.tasks_queue.popleft()
 
         #state 16: trash
         elif self.state == 16:
