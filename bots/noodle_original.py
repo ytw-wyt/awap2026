@@ -67,7 +67,7 @@ class BotPlayer:
             task = [0, 17] + self.nameNumberConversion(zhongjian) + [20] + self.nameNumberConversion(houmian) + [14]
 
         else:
-            task = [0, 2] + list(currOrder) + [14]
+            task = [0] + self.nameNumberConversion(["PLATE"] + currOrder) + [14]
         
         return task
     
@@ -349,6 +349,7 @@ class BotPlayer:
 
     def play_turn(self, controller: RobotController):
         if len(self.tasks_queue) == 0:
+            print("hahahahah")
             # Initialize positions first
             my_bots = controller.get_team_bot_ids(controller.get_team())
             if not my_bots: return
@@ -588,10 +589,16 @@ class BotPlayer:
 
         #state 21: add egg to plate
         elif self.state == 21:
+            # print for debugging
+            print('holding item in state 21:', bot_info.get('holding'))
             if self.move_towards(controller, bot_id, cx, cy):
                 if controller.add_food_to_plate(bot_id, cx, cy):
                     # self.state = 14
                     self.state = self.tasks_queue.popleft()
+                    print(self.state)
+                    # print the counter status
+                    print('counter status:', controller.get_tile(controller.get_team(), cx, cy).item)
+                    print('holding item in state 211111:', bot_info.get('holding'))
 
         #state 22: buy onion
         elif self.state == 22:
