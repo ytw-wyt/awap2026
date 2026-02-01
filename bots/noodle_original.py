@@ -13,10 +13,9 @@ class BotPlayer:
         self.cooker_loc = None
         self.my_bot_id = None
         
-        bot_info = RobotController.get_bot_state(0)
-        bx, by = bot_info['x'], bot_info['y']
-        self.shop_pos = self.find_nearest_tile(RobotController, bx, by, "SHOP")
-        self.cooker_pos = self.find_nearest_tile(RobotController, bx, by, "COOKER")
+
+        self.shop_pos = self.find_nearest_tile(RobotController, 0, 0, "SHOP")
+        self.cooker_pos = self.find_nearest_tile(RobotController, 0, 0, "COOKER")
 
         self.chop_counter = self.find_nearest_tile(RobotController, self.shop_pos(0), self.shop_pos(1), "COUNTER")
         self.plate_counter = self.find_nearest_tile_not_current(RobotController, self.chop_counter(0), self.chop_counter(1), "COUNTER")
