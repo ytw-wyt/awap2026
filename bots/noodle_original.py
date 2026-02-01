@@ -25,9 +25,7 @@ class BotPlayer:
         orders = controller.get_orders(controller.get_team())
         if not orders or self.order_index >= len(orders):
             # No more orders available, reset or return empty
-            self.order_index = 0
-            if not orders:
-                return []
+            return []
         
         self.order = orders[self.order_index]["required"] # list[foodtype]
         # print('order', self.order)
@@ -349,6 +347,7 @@ class BotPlayer:
 
 
     def play_turn(self, controller: RobotController):
+        print("task order:", self.order_index)
         if len(self.tasks_queue) == 0:
             print("hahahahah")
             # Initialize positions first
@@ -374,8 +373,12 @@ class BotPlayer:
             # Initialize cooker_loc for partition_task
             if self.cooker_loc is None:
                 self.cooker_loc = self.find_nearest_tile(controller, bx, by, "COOKER")
-            
+            print("initial q:", self.tasks_queue)
             self.put_task_in_queue(controller)
+            print("after q:", self.tasks_queue)
+
+            if self.state == -1:
+                return
 
         my_bots = controller.get_team_bot_ids(controller.get_team())
         if not my_bots: return
@@ -545,7 +548,7 @@ class BotPlayer:
             ux, uy = submit_pos
             if self.move_towards(controller, bot_id, ux, uy):
                 if controller.submit(bot_id, ux, uy):
-                    self.state = self.tasks_queue.popleft()
+                    self.state = -1
 
         #state 16: trash
         elif self.state == 16:
