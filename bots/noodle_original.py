@@ -47,18 +47,21 @@ class BotPlayer:
 
     def createTaskSequence(self, currOrder, map):
         if "EGG" in currOrder and "MEAT" in currOrder:
-            rest = currOrder - {"EGG", "MEAT"} + {"PLATE"} 
+            currOrder_copy = [item for item in currOrder if item not in ["EGG", "MEAT"]]
+            rest = currOrder_copy + ["PLATE"]
             zhongjian1, houmian1 = self.partition_task(rest)
             zhongjian2, houmian2 = self.partition_task(rest)
             task = [0, 2] + self.nameNumberConversion(zhongjian1) + [12, 17] + self.nameNumberConversion(zhongjian2) + [20] + self.nameNumberConversion(houmian2) + [14]
         
         elif "MEAT" in currOrder:
-            rest = currOrder - {"MEAT"} + {"PLATE"} 
+            currOrder_copy = [item for item in currOrder if item not in ["MEAT"]]
+            rest = currOrder_copy + ["PLATE"]
             zhongjian, houmian = self.partition_task(rest)
             task = [0, 2] + self.nameNumberConversion(zhongjian) + [12] + self.nameNumberConversion(houmian) + [14]
 
         elif "EGG" in currOrder:
-            rest = currOrder - {"EGG"} + {"PLATE"} 
+            currOrder_copy = [item for item in currOrder if item not in ["EGG"]]
+            rest = currOrder_copy + ["PLATE"]
             zhongjian, houmian = self.partition_task(rest)
             task = [0, 17] + self.nameNumberConversion(zhongjian) + [20] + self.nameNumberConversion(houmian) + [14]
 
