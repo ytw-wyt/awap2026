@@ -48,7 +48,10 @@ class BotPlayer:
             currOrder_copy = [item for item in currOrder if item not in ["EGG", "MEAT"]]
             rest = currOrder_copy + ["PLATE"]
             zhongjian1, houmian1 = self.partition_task(controller, rest)
-            zhongjian2, houmian2 = self.partition_task(controller, rest)
+            newhoumian1 = list(houmian1)
+            print(newhoumian1)
+            zhongjian2, houmian2 = self.partition_task(controller, newhoumian1)
+            print("success partitioning")
             task = [0, 2] + self.nameNumberConversion(zhongjian1) + [12, 17] + self.nameNumberConversion(zhongjian2) + [20] + self.nameNumberConversion(houmian2) + [14]
         
         elif "MEAT" in currOrder:
@@ -70,6 +73,8 @@ class BotPlayer:
     
     def nameNumberConversion(self, tasks):
         l = []
+        if tasks == set():
+            return l
         for task in tasks:
             if task == "PLATE":
                 l = [8] + l
@@ -198,15 +203,19 @@ class BotPlayer:
         return None
 
 
-
-
     def partition_task(self, controller: RobotController, tasks) -> Tuple[set[str], set[str]]:
+        if tasks == []:
+            return (set(), set())
         cooker_to_shop = self.get_bfs_distance(controller, self.cooker_loc, self.shop_pos)
         shop_to_plate = self.get_bfs_distance(controller, self.shop_pos, self.plate_counter)
         plate_to_cooker = self.get_bfs_distance(controller, self.plate_counter, self.cooker_loc)
 
 
+
+
         T = cooker_to_shop + shop_to_plate + plate_to_cooker
+
+
 
 
         shop_to_chop = self.get_bfs_distance(controller, self.shop_pos, self.chop_counter)
@@ -214,57 +223,128 @@ class BotPlayer:
         plate_to_shop = self.get_bfs_distance(controller, self.plate_counter, self.shop_pos)
 
 
+
+
         tasks = set(tasks)
 
 
-        if T > 37:
-            return (set(), tasks)
-        else:
-            if tasks == {"PLATE"}:
-                return (tasks, set())
+        if "PLATE" in tasks:
+            if T > 37:
+                return (set(), tasks)
             else:
-                if tasks == {'PLATE', 'SAUCE'} or tasks == {'PLATE', 'NOODLES'}:
-                    comb_T = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
-                    if comb_T > 37:
-                        return ({"PLATE"}, tasks - {"PLATE"})
-                    else:
-                        return (tasks, set())
-                elif tasks == {'PLATE', 'ONIONS'}:
-                    comb_T = cooker_to_shop + shop_to_chop + chop_to_plate + plate_to_cooker
-                    if comb_T > 37:
-                        return ({"PLATE"}, tasks - {"PLATE"})
-                    else:
-                        return (tasks, set())
-                elif tasks == {'PLATE', 'NOODLES', 'SAUCE'}:
-                    two_T = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
-                    three_T = two_T + plate_to_shop + shop_to_plate
-                    if two_T > 37:
-                        return ({"PLATE"}, tasks - {"PLATE"})
-                    else:
-                        if three_T > 37:
-                            return ({"PLATE", "NOODLES"}, {"SAUCE"})
+                if tasks == {"PLATE"}:
+                    return (tasks, set())
+                else:
+                    if tasks == {'PLATE', 'SAUCE'} or tasks == {'PLATE', 'NOODLES'}:
+                        comb_T = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
+                        if comb_T > 37:
+                            return ({"PLATE"}, tasks - {"PLATE"})
                         else:
                             return (tasks, set())
-                    
-                        return (tasks, set())
-                elif tasks == {'PLATE', 'NOODLES', 'ONIONS', 'SAUCE'}:
-                    plate_onion  = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_chop + chop_to_plate + plate_to_cooker
-                    plate_with_one = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
-                    plate_onion_with_one = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_chop + chop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
-                    plate_with_two = plate_with_one + plate_to_shop + shop_to_plate
-                    plate_with_three = plate_onion_with_one + plate_to_shop
-
-
-                    if plate_onion > 37 and plate_with_one > 37:
-                        return ({"PLATE"}, tasks - {"PLATE"})
-                    else:
-                        if plate_onion <= 37 and plate_with_one > 37:
-                            return ({"PLATE", "ONIONS"}, tasks - {"PLATE", "ONIONS"})
-                        elif plate_with_one <= 37 and plate_onion > 37:
-                            return ({"PLATE", "NOODLES"}, tasks - {"PLATE", "NOODLES"})
-                        # plate_with_one <= 37 and plate_onion <= 37:
+                    elif tasks == {'PLATE', 'ONIONS'}:
+                        comb_T = cooker_to_shop + shop_to_chop + chop_to_plate + plate_to_cooker
+                        if comb_T > 37:
+                            return ({"PLATE"}, tasks - {"PLATE"})
                         else:
-                            return ({"PLATE", "NOODLES", "ONIONS"}, {"SAUCE"})
+                            return (tasks, set())
+                    elif tasks == {'PLATE', 'NOODLES', 'SAUCE'}:
+                        two_T = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
+                        three_T = two_T + plate_to_shop + shop_to_plate
+                        if two_T > 37:
+                            return ({"PLATE"}, tasks - {"PLATE"})
+                        else:
+                            if three_T > 37:
+                                return ({"PLATE", "NOODLES"}, {"SAUCE"})
+                            else:
+                                return (tasks, set())
+                        
+                            return (tasks, set())
+                    elif tasks == {'PLATE', 'NOODLES', 'ONIONS', 'SAUCE'}:
+                        plate_onion  = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_chop + chop_to_plate + plate_to_cooker
+                        plate_with_one = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
+                        plate_onion_with_one = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_chop + chop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
+                        plate_with_two = plate_with_one + plate_to_shop + shop_to_plate
+                        plate_with_three = plate_onion_with_one + plate_to_shop
+
+
+
+
+                        if plate_onion > 37 and plate_with_one > 37:
+                            return ({"PLATE"}, tasks - {"PLATE"})
+                        else:
+                            if plate_onion <= 37 and plate_with_one > 37:
+                                return ({"PLATE", "ONIONS"}, tasks - {"PLATE", "ONIONS"})
+                            elif plate_with_one <= 37 and plate_onion > 37:
+                                return ({"PLATE", "NOODLES"}, tasks - {"PLATE", "NOODLES"})
+                            # plate_with_one <= 37 and plate_onion <= 37:
+                            else:
+                                return ({"PLATE", "NOODLES", "ONIONS"}, {"SAUCE"})
+        else:
+            if tasks =={"NOODLES"} or tasks == {"SAUCE"}:
+                t = cooker_to_shop + shop_to_plate + plate_to_cooker
+                if t > 37:
+                    return (set(), tasks)
+                else:
+                    return (tasks, set())
+            elif tasks == {"ONIONS"}:
+                t = cooker_to_shop + shop_to_chop + chop_to_plate + plate_to_cooker
+                if t > 37:
+                    return (set(), tasks)
+                else:
+                    return (tasks, set())
+            elif tasks == {'NOODLES', 'SAUCE'}:
+                t = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
+                if t > 37:
+                    t1 = cooker_to_shop + shop_to_plate + plate_to_cooker
+                    if t1 > 37:
+                        return (set(), tasks)
+                    else:
+                        return ({"NOODLES"}, {"SAUCE"})
+                else:
+                    return (tasks, set())
+            elif tasks == {'NOODLES', 'ONIONS'}:
+                t = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_chop + chop_to_plate + plate_to_cooker
+                if t > 37:
+                    t1 = cooker_to_shop + shop_to_plate + plate_to_cooker
+                    if t1 > 37:
+                        return (set(), tasks)
+                    else:
+                        return ({"NOODLES"}, {"ONIONS"})
+                else:
+                    return (tasks, set())
+            elif tasks == {'ONIONS', 'SAUCE'}:
+                t = cooker_to_shop + shop_to_chop + chop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
+                if t > 37:
+                    t1 = cooker_to_shop + shop_to_plate + plate_to_cooker
+                    if t1 > 37:
+                        return (set(), tasks)
+                    else:
+                        return ({"SAUCE"}, {"ONIONS"})
+                else:
+                    return (tasks, set())
+            elif tasks == {'NOODLES', 'ONIONS', 'SAUCE'}:
+                onion  = cooker_to_shop + shop_to_chop + chop_to_plate + plate_to_cooker
+                any_one = cooker_to_shop + shop_to_plate + plate_to_cooker
+                any_two = any_one + plate_to_shop + shop_to_plate
+                onion_with_one = cooker_to_shop + shop_to_chop + chop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
+                onion_with_two = onion_with_one + plate_to_shop + shop_to_plate
+
+
+                if any_one > 37:
+                    return (set(), tasks)
+                else:
+                    if onion_with_two <= 37:
+                        return (tasks, set())
+                    elif onion_with_one <= 37:
+                        return ({"ONIONS", "NOODLES"}, {"SAUCE"})
+                    elif any_two <= 37:
+                        return ({"NOODLES", "SAUCE"}, {"ONIONS"})
+                    elif onion <= 37:
+                        return ({"ONIONS"}, {"NOODLES", "SAUCE"}) 
+                    else:
+                        return ({"NOODLES"}, {"ONIONS", "SAUCE"})
+
+
 
 
     def play_turn(self, controller: RobotController):
@@ -435,10 +515,11 @@ class BotPlayer:
         elif self.state == 13:
             if self.move_towards(controller, bot_id, cx, cy):
                 if controller.add_food_to_plate(bot_id, cx, cy):
-                    self.state = 14
+                    self.state = self.tasks_queue.popleft()
 
         #state 14: pick up the plate
         elif self.state == 14:
+            print('holding item in state 14:', bot_info.get('holding'))
             if self.move_towards(controller, bot_id, cx, cy):
                 if controller.pickup(bot_id, cx, cy):
                     self.state = 15
@@ -474,6 +555,7 @@ class BotPlayer:
                 if self.move_towards(controller, bot_id, kx, ky):
                     # Using the NEW logic where place() starts cooking automatically
                     if controller.place(bot_id, kx, ky):
+                        print('placed egg on cooker', self.tasks_queue)
                         self.state = self.tasks_queue.popleft()
 
 
