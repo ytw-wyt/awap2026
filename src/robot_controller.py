@@ -380,7 +380,7 @@ class RobotController:
             self.__warn(f"place() failed: tile at ({target_x},{target_y}) cannot hold items for bot {bot_id}")
             return False
         if getattr(tile, "item") is not None:
-            self.__warn(f"place() failed: tile at ({target_x},{target_y}) already has an item for bot {bot_id}")
+            # self.__warn(f"place() failed: tile at ({target_x},{target_y}) already has an item for bot {bot_id}")
             return False
 
         tile.item = b.holding

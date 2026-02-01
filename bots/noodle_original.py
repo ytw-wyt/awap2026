@@ -474,14 +474,17 @@ class BotPlayer:
         elif self.state == 9:
             if self.move_towards(controller, bot_id, cx, cy):
                 if controller.place(bot_id, cx, cy):
+                    bot_info = controller.get_bot_state(bot_id)
+                    tile = controller.get_tile(controller.get_team(), cx, cy)
                     self.state = self.tasks_queue.popleft()
-                    print('holding item in state 9:', bot_info.get('holding'))
-                    print(self.map.tiles[cx][cy].item)
+                    print('place() succeeded — bot holding:', bot_info.get('holding'))
+                    print('place() succeeded — counter tile:', tile.item)
 
         #state 10: buy noodle
         elif self.state == 10:
             print('holding item in state 10:', bot_info.get('holding'))
-            print(self.map.tiles[4][4].item.to_dict() if self.map.tiles[cx][cy].item else None)
+            tile = controller.get_tile(controller.get_team(), cx, cy)
+            print("counter item:", tile.item)              # engine object or None
             shop_pos = self.find_nearest_tile(controller, bx, by, "SHOP")
             sx, sy = shop_pos
             if self.move_towards(controller, bot_id, sx, sy):
