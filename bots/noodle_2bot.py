@@ -437,15 +437,9 @@ class BotPlayer:
 
     def play_turn(self, controller: RobotController):
         # find all counters if not already found
-<<<<<<< HEAD
-        if self.all_counters == {}:
-            self.all_counters = self.find_empty_counters(controller)
-        if self.all_cookers == {}:
-=======
         if self.all_counters == dict():
             self.all_counters = self.find_empty_counters(controller)
         if self.all_cookers == dict():
->>>>>>> 88ae22d9bab68b58f2689b152fb7f41e9eab591c
             self.all_cookers = self.find_cookers(controller)
         
         print("task order:", self.order_index)
@@ -480,10 +474,6 @@ class BotPlayer:
                 #self.plate_counter = self.chop_counter #ERROR: 1 counter only
             
             # Initialize cooker_loc for partition_task
-<<<<<<< HEAD
-=======
-
->>>>>>> 88ae22d9bab68b58f2689b152fb7f41e9eab591c
             if self.cookers is None:
                 self.cooker_loc = [self.cooker_loc, self.cooker_loc_egg]
                 self.find_nearest_tile(controller, bx1, by1, "COOKER")
@@ -493,8 +483,6 @@ class BotPlayer:
 
 
 
-<<<<<<< HEAD
-=======
 
             if self.cooker_loc is None:
                 self.cooker_loc = self.find_nearest_tile(controller, self.shop_pos[0], self.shop_pos[1], "COOKER")
@@ -503,7 +491,6 @@ class BotPlayer:
                 self.cooker_loc_egg = self.find_nearest_tile_not_current(controller, self.cooker_loc[0], self.cooker_loc[1], "COOKER")
             
 
->>>>>>> 88ae22d9bab68b58f2689b152fb7f41e9eab591c
             print("initial q:", self.tasks_queue)
             self.put_task_in_queue(controller)
             print("after q:", self.tasks_queue)
