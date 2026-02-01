@@ -42,6 +42,7 @@ class BotPlayer:
         l = self.createTaskSequence(ingredients, self.map, controller)
         self.tasks_queue.extend(deque(l))
         self.state = self.tasks_queue.popleft()
+        print(self.tasks_queue)
 
     def createTaskSequence(self, currOrder, map, controller: RobotController):
         if "EGG" in currOrder and "MEAT" in currOrder:
@@ -474,9 +475,13 @@ class BotPlayer:
             if self.move_towards(controller, bot_id, cx, cy):
                 if controller.place(bot_id, cx, cy):
                     self.state = self.tasks_queue.popleft()
+                    print('holding item in state 9:', bot_info.get('holding'))
+                    print(self.map.tiles[cx][cy].item)
 
         #state 10: buy noodle
         elif self.state == 10:
+            print('holding item in state 10:', bot_info.get('holding'))
+            print(self.map.tiles[4][4].item.to_dict() if self.map.tiles[cx][cy].item else None)
             shop_pos = self.find_nearest_tile(controller, bx, by, "SHOP")
             sx, sy = shop_pos
             if self.move_towards(controller, bot_id, sx, sy):
@@ -486,9 +491,11 @@ class BotPlayer:
 
         #state 11: add noodles to plate
         elif self.state == 11:
+            # print holding 
             if self.move_towards(controller, bot_id, cx, cy):
                 if controller.add_food_to_plate(bot_id, cx, cy):
                     self.state = self.tasks_queue.popleft()
+                    print('holding item in state 11:', bot_info.get('holding'))
 
         #state 12: wait and take meat
         elif self.state == 12:
