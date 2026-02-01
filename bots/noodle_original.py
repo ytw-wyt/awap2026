@@ -27,7 +27,7 @@ class BotPlayer:
         # for i in neworder:
         #     self.order.append(i.food_name)
         self.order = orders[self.order_index]["required"] # list[foodtype]
-        print('order', self.order)
+        # print('order', self.order)
         self.order_index += 1
         return self.order
 
@@ -262,14 +262,29 @@ class BotPlayer:
 
     def play_turn(self, controller: RobotController):
         if len(self.tasks_queue) == 0:
-
-            self.shop_pos = self.find_nearest_tile(controller, 0, 0, "SHOP")
-            self.cooker_pos = self.find_nearest_tile(controller, 0, 0, "COOKER")
-
+            # Initialize positions first
+            my_bots = controller.get_team_bot_ids(controller.get_team())
+            if not my_bots: return
+            first_bot_info = controller.get_bot_state(my_bots[0])
+            bx, by = first_bot_info['x'], first_bot_info['y']
+            
+            self.shop_pos = self.find_nearest_tile(controller, bx, by, "SHOP")
+            self.cooker_pos = self.find_nearest_tile(controller, bx, by, "COOKER")
+            
+            if not self.shop_pos or not self.cooker_pos:
+                return
+            
             self.chop_counter = self.find_nearest_tile(controller, self.shop_pos[0], self.shop_pos[1], "COUNTER")
+            if not self.chop_counter:
+                return
+                
             self.plate_counter = self.find_nearest_tile_not_current(controller, self.chop_counter[0], self.chop_counter[1], "COUNTER")
             if self.plate_counter == None: 
                 self.plate_counter = self.chop_counter #ERROR: 1 counter only
+            
+            # Initialize cooker_loc for partition_task
+            if self.cooker_loc is None:
+                self.cooker_loc = self.find_nearest_tile(controller, bx, by, "COOKER")
             
             self.put_task_in_queue(controller)
 
