@@ -192,7 +192,13 @@ class BotPlayer:
 
 
     def get_bfs_path(self, controller: RobotController, start: Tuple[int, int], target_predicate) -> Optional[Tuple[int, int]]:
-        queue = deque([(start, [])]) 
+        """BFS that returns the first orthogonal step towards a target predicate.
+
+        NOTE: pathfinding intentionally restricts movement to orthogonal
+        neighbors (no diagonal moves). This keeps bot motion predictable and
+        avoids reciprocal diagonal swaps.
+        """
+        queue = deque([(start, [])])
         visited = set([start])
         w, h = self.map.width, self.map.height
 
@@ -200,30 +206,119 @@ class BotPlayer:
             (curr_x, curr_y), path = queue.popleft()
             tile = controller.get_tile(controller.get_team(), curr_x, curr_y)
             if target_predicate(curr_x, curr_y, tile):
-                if not path: return (0, 0) 
-                return path[0] 
+                if not path:
+                    return (0, 0)
+                return path[0]
 
-            for dx in [0, -1, 1]:
-                for dy in [0, -1, 1]:
-                    if dx == 0 and dy == 0: continue
-                    nx, ny = curr_x + dx, curr_y + dy
-                    if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in visited:
-                        if controller.get_map(controller.get_team()).is_tile_walkable(nx, ny):
-                            visited.add((nx, ny))
-                            queue.append(((nx, ny), path + [(dx, dy)]))
+            # only orthogonal neighbors (up/down/left/right)
+            for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                nx, ny = curr_x + dx, curr_y + dy
+                if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in visited:
+                    if controller.get_map(controller.get_team()).is_tile_walkable(nx, ny):
+                        visited.add((nx, ny))
+                        queue.append(((nx, ny), path + [(dx, dy)]))
         return None
 
+    def _orthogonal_neighbors(self, x: int, y: int):
+        """Return orthogonal neighbor (dx, dy) offsets in preferred order."""
+        return [(0, -1), (1, 0), (0, 1), (-1, 0)]  # up, right, down, left
+
+    def _find_bot_at(self, controller: RobotController, x: int, y: int) -> Optional[int]:
+        """Return bot_id at (x,y) for either team, or None."""
+        # check own team first for determinism
+        for bid in controller.get_team_bot_ids(controller.get_team()):
+            st = controller.get_bot_state(bid)
+            if st and st["x"] == x and st["y"] == y:
+                return bid
+        for bid in controller.get_team_bot_ids(controller.get_enemy_team()):
+            st = controller.get_bot_state(bid)
+            if st and st["x"] == x and st["y"] == y:
+                return bid
+        return None
+
+    def _safe_move(self, controller: RobotController, bot_id: int, dx: int, dy: int) -> bool:
+        """Call can_move -> move. Returns True iff the move was executed."""
+        if controller.can_move(bot_id, dx, dy):
+            return controller.move(bot_id, dx, dy)
+        return False
+
+    def _resolve_two_bot_block(self, controller: RobotController, bot_id: int, dest_x: int, dest_y: int) -> bool:
+        """Handle a 2-bot swap attempt deterministically.
+
+        - If this bot should *yield* (higher bot_id), it will attempt a single
+          orthogonal aside (first available) and return True if it moved.
+        - If this bot should *not* yield, it will attempt to move into the
+          destination (if legal) and return True if it moved.
+        - Otherwise returns False (no move performed).
+        """
+        bot_st = controller.get_bot_state(bot_id)
+        if bot_st is None:
+            return False
+        bx, by = bot_st["x"], bot_st["y"]
+
+        occupant = self._find_bot_at(controller, dest_x, dest_y)
+        if occupant is None:
+            return False
+
+        # does occupant have a legal step into our tile (i.e. swap)?
+        other_can_swap = controller.can_move(occupant, bx - dest_x, by - dest_y)
+        if not other_can_swap:
+            return False
+
+        # deterministic tie-breaker: higher id yields
+        if bot_id > occupant:
+            # try asides in preferred order
+            for ax, ay in self._orthogonal_neighbors(bx, by):
+                nx, ny = bx + ax, by + ay
+                # avoid stepping into the blocking bot or off-map (can_move covers walkable)
+                if (nx, ny) == (dest_x, dest_y):
+                    continue
+                if self._safe_move(controller, bot_id, ax, ay):
+                    return True
+            # no aside found -> yield by not moving
+            return False
+        else:
+            # non-yielding bot tries to take the occupant's tile
+            if self._safe_move(controller, bot_id, dest_x - bx, dest_y - by):
+                return True
+            return False
+
     def move_towards(self, controller: RobotController, bot_id: int, target_x: int, target_y: int) -> bool:
+        """Orthogonal step-toward with deterministic 2-bot resolution and safety checks.
+
+        Returns True if the bot is already adjacent to the target (done), False
+        otherwise. The function guarantees no diagonal moves and always calls
+        `can_move` before `move`.
+        """
         bot_state = controller.get_bot_state(bot_id)
-        bx, by = bot_state['x'], bot_state['y']
+        if bot_state is None:
+            return False
+        bx, by = bot_state["x"], bot_state["y"]
+
         def is_adjacent_to_target(x, y, tile):
             return max(abs(x - target_x), abs(y - target_y)) <= 1
-        if is_adjacent_to_target(bx, by, None): return True
+
+        if is_adjacent_to_target(bx, by, None):
+            return True
+
         step = self.get_bfs_path(controller, (bx, by), is_adjacent_to_target)
-        if step and (step[0] != 0 or step[1] != 0):
-            controller.move(bot_id, step[0], step[1])
-            return False 
-        return False 
+        if not step:
+            return False
+
+        dx, dy = step[0], step[1]
+        # enforce orthogonal (BFS returns orthogonal but be defensive)
+        if abs(dx) + abs(dy) != 1:
+            return False
+
+        dest_x, dest_y = bx + dx, by + dy
+        occupant = self._find_bot_at(controller, dest_x, dest_y)
+        if occupant is None:
+            self._safe_move(controller, bot_id, dx, dy)
+            return False
+
+        # destination occupied -> try to resolve deterministically (only one bot moves)
+        self._resolve_two_bot_block(controller, bot_id, dest_x, dest_y)
+        return False
 
     def find_nearest_tile(self, controller: RobotController, bot_x: int, bot_y: int, tile_name: str) -> Optional[Tuple[int, int]]:
         best_dist = 9999
