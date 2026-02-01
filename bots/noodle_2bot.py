@@ -25,6 +25,8 @@ class BotPlayer:
 
         self.order = []
         self.order_index = 0
+        self.cooker_loc_egg = None
+        self.cooker_loc = None
 
         self.all_counters = {} # dictionary, key: counter, value: order_num
         # -1 means empty counter
@@ -101,6 +103,7 @@ class BotPlayer:
             egg_cooker_to_cooker = self.get_bfs_distance(controller, self.cooker_loc_egg, self.cooker_loc)
             T = cooker_to_shop + shop_to_egg_cooker + egg_cooker_to_cooker
 
+<<<<<<< HEAD
             mc = currOrder.count("MEAT")
             ec = currOrder.count("EGG")
             if T < 37: 
@@ -150,6 +153,18 @@ class BotPlayer:
                         bot2tasks += [(17, self.cooker_loc), (20, self.cooker_loc)]
                 else:
                     bot2tasks = [(17, self.cooker_loc), (20, self.cooker_loc)] * ec
+=======
+            if T < 37: 
+                bot2tasks = [2, 17, 12, 20]
+            else:
+                bot2tasks = [2, 12, 17, 20]
+
+        elif "MEAT" in currOrder:
+            bot2tasks = [2, 12]
+        
+        elif "EGG" in currOrder:
+            bot2tasks = [17, 20]
+>>>>>>> c3ef7615a2128768c2d16b25b5d91f833cfa5cdc
     
         else:
             bot2tasks = []
@@ -473,6 +488,7 @@ class BotPlayer:
                 #self.plate_counter = self.chop_counter #ERROR: 1 counter only
             
             # Initialize cooker_loc for partition_task
+<<<<<<< HEAD
             if self.cookers is None:
                 self.cooker_loc = [self.cooker_loc, self.cooker_loc_egg]
                 self.find_nearest_tile(controller, bx1, by1, "COOKER")
@@ -482,6 +498,14 @@ class BotPlayer:
 
 
 
+=======
+            if self.cooker_loc is None:
+                self.cooker_loc = self.find_nearest_tile(controller, self.shop_pos[0], self.shop_pos[1], "COOKER")
+
+            if self.cooker_loc_egg is None:
+                self.cooker_loc_egg = self.find_nearest_tile_not_current(controller, self.cooker_loc[0], self.cooker_loc[1], "COOKER")
+            
+>>>>>>> c3ef7615a2128768c2d16b25b5d91f833cfa5cdc
             print("initial q:", self.tasks_queue)
             self.put_task_in_queue(controller)
             print("after q:", self.tasks_queue)
