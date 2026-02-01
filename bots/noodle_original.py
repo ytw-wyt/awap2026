@@ -281,6 +281,8 @@ class BotPlayer:
                             # plate_with_one <= 37 and plate_onion <= 37:
                             else:
                                 return ({"PLATE", "NOODLES", "ONIONS"}, {"SAUCE"})
+                    else:
+                        return (set, tasks)
         else:
             if tasks =={"NOODLES"} or tasks == {"SAUCE"}:
                 t = cooker_to_shop + shop_to_plate + plate_to_cooker
@@ -345,6 +347,8 @@ class BotPlayer:
                         return ({"ONIONS"}, {"NOODLES", "SAUCE"}) 
                     else:
                         return ({"NOODLES"}, {"ONIONS", "SAUCE"})
+            else:
+                return (set(), tasks)
 
 
 
@@ -378,6 +382,7 @@ class BotPlayer:
             
             self.put_task_in_queue(controller)
 
+        print(self.tasks_queue)
         my_bots = controller.get_team_bot_ids(controller.get_team())
         if not my_bots: return
     
@@ -616,7 +621,7 @@ class BotPlayer:
             shop_pos = self.find_nearest_tile(controller, bx, by, "SHOP")
             sx, sy = shop_pos
             if self.move_towards(controller, bot_id, sx, sy):
-                if controller.get_team_money(controller.get_team()) >= FoodType.ONION.buy_cost:
+                if controller.get_team_money(controller.get_team()) >= FoodType.ONIONS.buy_cost:
                     if controller.buy(bot_id, FoodType.ONIONS, sx, sy):
                         self.state = 23
         
