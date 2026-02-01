@@ -14,7 +14,10 @@ class BotPlayer:
         self.my_bot_id = None
 
         self.state = 0
-        self.done = True
+        # self.done = True
+        self.done1 = {} # array of bools, whether finished current order
+        self.done2 = {} # array of bools, whether finished current order
+        self.submit = {}
     
         self.tasks_queue = deque()
         self.bot1_queue = deque()
@@ -37,6 +40,9 @@ class BotPlayer:
         self.bot1_order = -1
         self.bot2_order = -1
 
+        self.bot2_index = 0
+        self.bot1_index = 0
+
         self.cookers = []
 
 
@@ -52,6 +58,18 @@ class BotPlayer:
                         empty_counters[(x, y)] = -1
         return empty_counters
     
+    def find_nearest_empty_counter(self, controller: RobotController, bot_x: int, bot_y: int) -> Optional[Tuple[int, int]]:
+        best_dist = 9999
+        best_pos = None
+        for pos in self.all_counters.keys():
+            if self.all_counters[pos] == -1:
+                x, y = pos
+                dist = max(abs(bot_x - x), abs(bot_y - y))
+                if dist < best_dist:
+                    best_dist = dist
+                    best_pos = (x, y)
+        return best_pos
+
     def find_cookers(self, controller: RobotController) -> List[Tuple[int, int]]:
         empty_counters = {}
         m = controller.get_map(controller.get_team())
@@ -66,32 +84,48 @@ class BotPlayer:
 
     # get list of ingredients for current order
     def get_required_ingrediants(self, controller: RobotController):
-        if not self.done:
-            return 
-        else: 
+        # if not self.done:
+        #     return 
+        # else: 
+        if self.done1.get(self.bot1_index - 1) == True:
             orders = controller.get_orders(controller.get_team())
-            if not orders or self.order_index >= len(orders):
+            if not orders or self.bot1_index >= len(orders):
                 # No more orders available, reset or return empty
                 return []
             
-            self.order = orders[self.order_index]["required"] # list[foodtype]
+            self.bot1_order = orders[self.bot1_index]["required"] # list[foodtype]
             # print('order', self.order)
-            self.order_index += 1
-            self.done = False
-            return self.order
+            self.bot1_index += 1
+            self.done1[self.bot1_index - 1] = False
+            
+            
+        if self.done2.get(self.bot2_index - 1) == True:
+            orders = controller.get_orders(controller.get_team())
+            if not orders or self.bot2_index >= len(orders):
+                # No more orders available, reset or return empty
+                return []
+            
+            self.bot2_order = orders[self.bot2_index]["required"] # list[foodtype]
+            # print('order', self.order)
+            self.bot2_index += 1
+            self.done2[self.bot2_index - 1] = False
+
+        return self.bot1_order, self.bot2_order
+        
 
     def put_task_in_queue(self, controller: RobotController):
-        ingredients = self.get_required_ingrediants(controller)
-        if not ingredients:
+        ingredients1, ingredients2 = self.get_required_ingrediants(controller)
+        if not ingredients1 and not ingredients2:
             # No orders available, just wait
             return
+        ingredients = ingredients1 + ingredients2
         bigl, bot1l, bot2l = self.createTaskSequence(ingredients, self.map, controller)
         self.tasks_queue.extend(deque(bigl))
         self.bot1_queue.extend(deque(bot1l))
         self.bot2_queue.extend(deque(bot2l))
 
-        self.state = self.tasks_queue.popleft()
-        print(self.tasks_queue)
+        # self.state = self.tasks_queue.popleft()
+        # print(self.tasks_queue)
 
     def createTaskSequence(self, currOrder, map, controller: RobotController):
 
@@ -536,9 +570,9 @@ class BotPlayer:
             self.all_counters = self.find_empty_counters(controller)
         if self.all_cookers == dict():
             self.all_cookers = self.find_cookers(controller)
-        
+
         print("task order:", self.order_index)
-        if len(self.tasks_queue) == 0:
+        if len(self.bot1_queue) == 0 or len(self.bot2_queue) == 0:
             print("hahahahah")
             # Initialize positions first
             my_bots = controller.get_team_bot_ids(controller.get_team())
@@ -548,9 +582,6 @@ class BotPlayer:
             bot2_info = controller.get_bot_state(my_bots[1]) #cooker
             bx2, by2 = bot2_info['x'], bot2_info['y']
             
-            self.shop1_pos = self.find_nearest_tile(controller, bx1, by1, "SHOP")
-            self.shop2_pos = self.find_nearest_tile(controller, bx2, by2, "SHOP")
-
             self.cooker1_pos = self.find_nearest_tile(controller, bx1, by1, "COOKER")
             self.cooker2_pos = self.find_nearest_tile(controller, bx2, by2, "COOKER")
             
@@ -573,11 +604,6 @@ class BotPlayer:
                 self.cooker_loc = [self.cooker_loc, self.cooker_loc_egg]
                 self.find_nearest_tile(controller, bx1, by1, "COOKER")
                 ##############################################################
-            for loc in self.assmbly_counter:
-                self.all_counters[loc] = None
-
-
-
 
             if self.cooker_loc is None:
                 self.cooker_loc = self.find_nearest_tile(controller, self.shop_pos[0], self.shop_pos[1], "COOKER")
@@ -585,10 +611,7 @@ class BotPlayer:
             if self.cooker_loc_egg is None:
                 self.cooker_loc_egg = self.find_nearest_tile_not_current(controller, self.cooker_loc[0], self.cooker_loc[1], "COOKER")
             
-
-            print("initial q:", self.tasks_queue)
             self.put_task_in_queue(controller)
-            print("after q:", self.tasks_queue)
 
         my_bots = controller.get_team_bot_ids(controller.get_team())
         if not my_bots: return
@@ -610,16 +633,17 @@ class BotPlayer:
         #    self.cooker_loc = self.find_nearest_tile(controller, bx, by, "COOKER")
 
         
-
+        self.assembly_counter = self.find_nearest_empty_counter(controller, bx1, by1)
+        
         if not self.assembly_counter or not self.cooker_loc: return
 
         cx, cy = self.assembly_counter
         kx, ky = self.cooker_loc
 
-        if self.bot1_state in [22, 27, 10, 8] and bot_info.get('holding'):
+        if self.bot1_state in [22, 27, 10, 8] and bot1_info.get('holding'):
             self.bot1_state = 16
 
-        if self.bot2_state in [2, 0, 17, 8] and bot_info.get('holding'):
+        if self.bot2_state in [2, 0, 17, 8] and bot2_info.get('holding'):
             self.bot2_state = 16
         #####
         #8 14
@@ -629,17 +653,17 @@ class BotPlayer:
         if self.bot2_state == 0:
             tile = controller.get_tile(controller.get_team(), kx, ky)
             if tile and isinstance(tile.item, Pan):
-                self.bot2_state = self.tasks_queue.popleft()
+                self.bot2_state, self.bot2_next_location = self.bot2_queue.popleft()[0], self.bot2_queue.popleft()[1]
             else:
                 self.bot2_state = 1
 
         #state 1: buy pan
-        elif self.bot2_state == 1:
-            holding = bot_info.get('holding')
+        elif self.bot2_state == 1 and not bot2_info.get('holding'):
+            holding = bot2_info.get('holding')
             if holding: # assume it's the pan
-                if self.move_towards(controller, bot2_id, kx, ky):
-                    if controller.place(bot2_id, kx, ky):
-                        self.bot2_state = self.tasks_queue.popleft()
+                if self.move_towards(controller, bot2_id, self.bot2_next_location[0], self.bot2_next_location[1]):
+                    if controller.place(bot2_id, self.cooker_loc[0], self.cooker_loc[1]):
+                        self.bot2_state, self.bot2_next_location = self.bot2_queue.popleft()
             else:
                 shop_pos = self.find_nearest_tile(controller, bx2, by2, "SHOP")
                 if not shop_pos: return
@@ -677,11 +701,11 @@ class BotPlayer:
 
         #state 6: put meat on cooker
         elif self.bot2_state == 6:
-            if self.move_towards(controller, bot2_id, kx, ky):
+            if self.move_towards(controller, bot2_id, self.bot2_next_location[0], self.bot2_next_location[1]):
                 # Using the NEW logic where place() starts cooking automatically
-                if controller.place(bot2_id, kx, ky):
-                    print('placed meat on cooker', self.tasks_queue)
-                    self.bot2_state = self.bot2_queue.popleft()
+                if controller.place(bot2_id, self.bot2_next_location[0], self.bot2_next_location[1]):
+                    print('placed meat on cooker', self.bot2_queue)
+                    self.bot2_state, self.bot2_next_location = self.bot2_queue.popleft()
 
         #state 7: start the cook, but is cooking so we just go
         elif self.bot2_state == 7:
@@ -689,7 +713,7 @@ class BotPlayer:
             pass
 
         #state 8: buy the plate
-        elif self.bot2_state == 8:
+        elif self.bot2_state == 8 and self.plate_positions[self.bot2_index] is None:
             shop_pos = self.find_nearest_tile(controller, bx2, by2, "SHOP")
             sx, sy = shop_pos
             if self.move_towards(controller, bot2_id, sx, sy):
@@ -703,18 +727,22 @@ class BotPlayer:
                 if controller.place(bot2_id, cx, cy):
                     bot2_info = controller.get_bot_state(bot2_id)
                     tile = controller.get_tile(controller.get_team(), cx, cy)
-                    self.bot2_state = self.bot2_queue.popleft()
+                    self.bot2_state, self.bot2_next_location = self.bot2_queue.popleft()
+
+
+                    self.plate_positions[self.bot2_index] = (cx, cy)
+                    self.all_counters[(cx, cy)] = self.bot2_order
                     print('place() succeeded — bot holding:', bot2_info.get('holding'))
                     print('place() succeeded — counter tile:', tile.item)
 
         #state 12: wait and take meat
         elif self.bot2_state == 12:
-            if self.move_towards(controller, bot2_id, kx, ky):
-                tile = controller.get_tile(controller.get_team(), kx, ky)
+            if self.move_towards(controller, bot2_id, self.bot2_next_location[0], self.bot2_next_location[1]):
+                tile = controller.get_tile(controller.get_team(), self.bot2_next_location[0], self.bot2_next_location[1])
                 if tile and isinstance(tile.item, Pan) and tile.item.food:
                     food = tile.item.food
                     if food.cooked_stage == 1:
-                        if controller.take_from_pan(bot2_id, kx, ky):
+                        if controller.take_from_pan(bot2_id, self.bot2_next_location[0], self.bot2_next_location[1]):
                             self.bot2_state = 13
                     elif food.cooked_stage == 2:
 
@@ -733,7 +761,7 @@ class BotPlayer:
         elif self.bot2_state == 13:
             if self.move_towards(controller, bot2_id, cx, cy):
                 if controller.add_food_to_plate(bot2_id, cx, cy):
-                    self.state = self.bot2_queue.popleft()
+                    self.bot2_state, self.bot2_next_location = self.bot2_queue.popleft()
         
         #state 17: buy egg
         elif self.bot2_state == 17:
@@ -746,11 +774,11 @@ class BotPlayer:
 
         #state 18: put egg on cooker
         elif self.bot2_state == 18:
-                if self.move_towards(controller, bot2_id, kx, ky):
+                if self.move_towards(controller, bot2_id, self.bot2_next_location[0], self.bot2_next_location[1]):
                     # Using the NEW logic where place() starts cooking automatically
-                    if controller.place(bot2_id, kx, ky):
-                        print('placed egg on cooker', self.bot2_ueue)
-                        self.bot2_state = self.bot2_queue.popleft()
+                    if controller.place(bot2_id, self.bot2_next_location[0], self.bot2_next_location[1]):
+                        print('placed egg on cooker', self.bot2_queue)
+                        self.bot2_state, self.bot2_next_location = self.bot2_queue.popleft()
 
 
         #state 19: start the cook egg, but is cooking so we just go
@@ -760,12 +788,12 @@ class BotPlayer:
 
         #state 20: wait and take egg
         elif self.bot2_state == 20:
-            if self.move_towards(controller, bot2_id, kx, ky):
-                tile = controller.get_tile(controller.get_team(), kx, ky)
+            if self.move_towards(controller, bot2_id, self.bot2_next_location[0], self.bot2_next_location[1]):
+                tile = controller.get_tile(controller.get_team(), self.bot2_next_location[0], self.bot2_next_location[1])
                 if tile and isinstance(tile.item, Pan) and tile.item.food:
                     food = tile.item.food
                     if food.cooked_stage == 1:
-                        if controller.take_from_pan(bot2_id, kx, ky):
+                        if controller.take_from_pan(bot2_id, self.bot2_next_location[0], self.bot2_next_location[1]):
                             self.bot2_state = 21
                     elif food.cooked_stage == 2:
                         #trash
@@ -787,7 +815,7 @@ class BotPlayer:
             if self.move_towards(controller, bot2_id, cx, cy):
                 if controller.add_food_to_plate(bot2_id, cx, cy):
                     # self.state = 14
-                    self.bot2_state = self.bot2_queue.popleft()
+                    self.bot2_state, self.bot2_next_location = self.bot2_queue.popleft()
                     print(self.bot2_state)
                     # print the counter status
                     print('counter status:', controller.get_tile(controller.get_team(), cx, cy).item)
@@ -796,9 +824,11 @@ class BotPlayer:
         #state 14: pick up the plate
         elif self.bot2_state == 14:
             print('holding item in state 14:', bot2_info.get('holding'))
-            if self.move_towards(controller, bot2_id, cx, cy):
+            if self.move_towards(controller, bot2_id, cx, cy) and self.done1[self.bot2_order] and not self.submit[self.bot2_order]:
                 if controller.pickup(bot2_id, cx, cy):
-                    self.state = 15
+                    self.bot2_state = 15
+                else:
+                    self.done2[self.bot2_order] = True
 
         #state 15: submit
         elif self.bot2_state == 15:
@@ -806,9 +836,12 @@ class BotPlayer:
             ux, uy = submit_pos
             if self.move_towards(controller, bot2_id, ux, uy):
                 if controller.submit(bot2_id, ux, uy):
-                    self.done = True
-                    if self.tasks_queue:
-                        self.state = self.tasks_queue.popleft()
+                    if self.bot2_queue:
+                        self.bot2_state, self.bot2_next_location = self.bot2_queue.popleft()
+                    self.plate_positions[self.bot2_order] = None
+                    self.all_counters[(cx, cy)] = -1
+
+                    self.submit[self.bot2_order] = True
 
         #state 16: trash
         elif self.bot2_state == 16:
@@ -819,23 +852,16 @@ class BotPlayer:
                 if controller.trash(bot2_id, tx, ty):
                     self.bot2_state = 2 #restart
         
-
-
-
-
-
-
-
-
-        #state 10: buy noodle
-         #state 8: buy the plate
-        if self.bot1_state == 8:
+        #state 8: buy the plate
+        if self.bot1_state == 8 and self.plate_positions[self.bot1_order] is None:
             shop_pos = self.find_nearest_tile(controller, bx1, by1, "SHOP")
             sx, sy = shop_pos
             if self.move_towards(controller, bot1_id, sx, sy):
                 if controller.get_team_money(controller.get_team()) >= ShopCosts.PLATE.buy_cost:
                     if controller.buy(bot1_id, ShopCosts.PLATE, sx, sy):
                         self.bot1_state = 9
+                        self.plate_positions[self.bot1_order] = (cx, cy)
+                        self.all_counters[(cx, cy)] = self.bot1_order
 
         #state 9: put the plate on the counter
         elif self.bot1_state == 9:
@@ -843,10 +869,11 @@ class BotPlayer:
                 if controller.place(bot1_id, cx, cy):
                     bot1_info = controller.get_bot_state(bot1_id)
                     tile = controller.get_tile(controller.get_team(), cx, cy)
-                    self.bot1_state = self.bot1_queue.popleft()
+                    self.bot1_state = self.bot1_queue.popleft()[0]
                     print('place() succeeded — bot holding:', bot1_info.get('holding'))
                     print('place() succeeded — counter tile:', tile.item)
-
+        
+        #state 10: buy noodles
         elif self.bot1_state == 10:
             print('holding item in state 10:', bot1_info.get('holding'))
             tile = controller.get_tile(controller.get_team(), cx, cy)
@@ -866,7 +893,7 @@ class BotPlayer:
                     # refresh snapshots from the engine (controller) so we print live state
                     bot1_info = controller.get_bot_state(bot1_id)
                     tile = controller.get_tile(controller.get_team(), cx, cy)
-                    self.state = self.bot1_queue.popleft()
+                    self.bot1_state = self.bot1_queue.popleft()[0]
                     print('after add_food_to_plate — bot holding:', bot1_info.get('holding'))
                     print('after add_food_to_plate — counter item (public):', controller.item_to_public_dict(getattr(tile, 'item', None)))
 
@@ -874,19 +901,23 @@ class BotPlayer:
         #state 14: pick up the plate
         elif self.bot1_state == 14:
             print('holding item in state 14:', bot1_info.get('holding'))
-            if self.move_towards(controller, bot1_id, cx, cy):
+            if self.move_towards(controller, bot1_id, cx, cy) and self.done2[self.bot1_index - 1] and not self.submit[self.bot1_index - 1]:
                 if controller.pickup(bot1_id, cx, cy):
                     self.state = 15
-
+            else:
+                self.done1[self.bot1_index - 1] = True
         #state 15: submit
         elif self.bot1_state == 15:
             submit_pos = self.find_nearest_tile(controller, bx1, by1, "SUBMIT")
             ux, uy = submit_pos
             if self.move_towards(controller, bot1_id, ux, uy):
                 if controller.submit(bot1_id, ux, uy):
-                    self.done = True
                     if self.bot1_queue:
-                        self.bot1_state = self.bot1_queue.popleft()
+                        self.bot1_state = self.bot1_queue.popleft()[0]
+                        self.plate_positions[self.bot1_order] = None
+                        self.all_counters[(cx, cy)] = -1
+
+                        self.submit[self.bot2_order] = True
 
         #state 16: trash
         elif self.bot1_state == 16:
@@ -930,7 +961,7 @@ class BotPlayer:
             if self.move_towards(controller, bot1_id, cx, cy):
                 if controller.add_food_to_plate(bot1_id, cx, cy):
                     # self.state = 27
-                    self.bot1_state = self.tasks_queue.popleft()
+                    self.bot1_state = self.bot1_queue.popleft()[0]
         
         #state 27: Buy Sauce
         elif self.bot1_state == 27:
@@ -946,11 +977,11 @@ class BotPlayer:
             if self.move_towards(controller, bot1_id, cx, cy):
                 if controller.add_food_to_plate(bot1_id, cx, cy):
                     # self.state = 14
-                    self.bot1_state = self.bot1_queue.popleft()
+                    self.bot1_state = self.bot1_queue.popleft()[0]
 
         
         self.bot1_id = my_bots[0]
-        bot1_id = self.my_bot1_id
+        bot1_id = self.bot1_id
         
         bot1_info = controller.get_bot_state(bot1_id)
         bx1, by1 = bot1_info['x'], bot1_info['y']
