@@ -136,7 +136,7 @@ class BotPlayer:
                 if controller.pickup(bot_id, cx, cy):
                     self.state = 6
 
-        #state 6: put meat on counter
+        #state 6: put meat on cooker
         elif self.state == 6:
             if self.move_towards(controller, bot_id, kx, ky):
                 # Using the NEW logic where place() starts cooking automatically
@@ -227,6 +227,108 @@ class BotPlayer:
             if self.move_towards(controller, bot_id, tx, ty):
                 if controller.trash(bot_id, tx, ty):
                     self.state = 2 #restart
+        
+        #state 17: buy egg
+        elif self.state == 17:
+            shop_pos = self.find_nearest_tile(controller, bx, by, "SHOP")
+            sx, sy = shop_pos
+            if self.move_towards(controller, bot_id, sx, sy):
+                if controller.get_team_money(controller.get_team()) >= FoodType.EGG.buy_cost:
+                    if controller.buy(bot_id, FoodType.EGG, sx, sy):
+                        self.state = 18
+
+        #state 18: put egg on cooker
+        elif self.state == 18:
+                if self.move_towards(controller, bot_id, kx, ky):
+                    # Using the NEW logic where place() starts cooking automatically
+                    if controller.place(bot_id, kx, ky):
+                            self.state = 19 # Skip state 7
+
+
+        #state 19: start the cook egg, but is cooking so we just go
+        elif self.state == 19:
+            self.state = 20
+
+
+        #state 20: wait and take egg
+        elif self.state == 20:
+            if self.move_towards(controller, bot_id, kx, ky):
+                tile = controller.get_tile(controller.get_team(), kx, ky)
+                if tile and isinstance(tile.item, Pan) and tile.item.food:
+                    food = tile.item.food
+                    if food.cooked_stage == 1:
+                        if controller.take_from_pan(bot_id, kx, ky):
+                            self.state = 21
+                    elif food.cooked_stage == 2:
+                        #trash
+                        if controller.take_from_pan(bot_id, kx, ky):
+                            self.state = 16
+                else:
+                    if bot_info.get('holding'):
+                        #trash
+                        self.state = 16
+                    else:
+                        #restart
+                        self.state = 17
+
+
+        #state 21: add egg to plate
+        elif self.state == 21:
+            if self.move_towards(controller, bot_id, cx, cy):
+                if controller.add_food_to_plate(bot_id, cx, cy):
+                    # self.state = 14
+                    pass
+
+        #state 22: buy onion
+        elif self.state == 22:
+            shop_pos = self.find_nearest_tile(controller, bx, by, "SHOP")
+            sx, sy = shop_pos
+            if self.move_towards(controller, bot_id, sx, sy):
+                if controller.get_team_money(controller.get_team()) >= FoodType.ONION.buy_cost:
+                    if controller.buy(bot_id, FoodType.ONIONS, sx, sy):
+                        self.state = 23
+        
+        #state 23: put onion on counter
+        elif self.state == 23:
+            if self.move_towards(controller, bot_id, cx, cy):
+                if controller.place(bot_id, cx, cy):
+                    self.state = 24
+        
+        #state 25: chop onion
+        elif self.state == 24:
+            if self.move_towards(controller, bot_id, cx, cy):
+                if controller.chop(bot_id, cx, cy):
+                    self.state = 25
+        
+        #state 26: pickup onion
+        elif self.state == 25:
+            if self.move_towards(controller, bot_id, cx, cy):
+                if controller.pickup(bot_id, cx, cy):
+                    self.state = 26
+        
+        #state 26: add onion to the plate
+        elif self.state == 26:
+            if self.move_towards(controller, bot_id, cx, cy):
+                if controller.add_food_to_plate(bot_id, cx, cy):
+                    # self.state = 27
+                    pass
+        
+        #state 27: Buy Sauce
+        elif self.state == 27:
+            shop_pos = self.find_nearest_tile(controller, bx, by, "SHOP")
+            sx, sy = shop_pos
+            if self.move_towards(controller, bot_id, sx, sy):
+                if controller.get_team_money(controller.get_team()) >= FoodType.SAUCE.buy_cost:
+                    if controller.buy(bot_id, FoodType.SAUCE, sx, sy):
+                        self.state = 28
+
+        #state 28: Add sauce to the plate
+        elif self.state == 28:
+            if self.move_towards(controller, bot_id, cx, cy):
+                if controller.add_food_to_plate(bot_id, cx, cy):
+                    # self.state = 14
+                    pass
+
         for i in range(1, len(my_bots)):
             self.my_bot_id = my_bots[i]
             bot_id = self.my_bot_id
