@@ -29,30 +29,31 @@ class BotPlayer:
         self.order = orders[self.order_index]["required"] # list[foodtype]
         print('order', self.order)
         self.order_index += 1
+        return self.order
 
     def put_task_in_queue(self, controller: RobotController):
-        l = self.createTaskSequence(self.get_required_ingrediants(controller), self.map)
+        l = self.createTaskSequence(self.get_required_ingrediants(controller), self.map, controller)
         self.tasks_queue.extend(deque(l))
         self.state = self.tasks_queue.popleft()
 
-    def createTaskSequence(self, currOrder, map):
+    def createTaskSequence(self, currOrder, map, controller: RobotController):
         if "EGG" in currOrder and "MEAT" in currOrder:
             currOrder_copy = [item for item in currOrder if item not in ["EGG", "MEAT"]]
             rest = currOrder_copy + ["PLATE"]
-            zhongjian1, houmian1 = self.partition_task(rest)
-            zhongjian2, houmian2 = self.partition_task(rest)
+            zhongjian1, houmian1 = self.partition_task(controller, rest)
+            zhongjian2, houmian2 = self.partition_task(controller, rest)
             task = [0, 2] + self.nameNumberConversion(zhongjian1) + [12, 17] + self.nameNumberConversion(zhongjian2) + [20] + self.nameNumberConversion(houmian2) + [14]
         
         elif "MEAT" in currOrder:
             currOrder_copy = [item for item in currOrder if item not in ["MEAT"]]
             rest = currOrder_copy + ["PLATE"]
-            zhongjian, houmian = self.partition_task(rest)
+            zhongjian, houmian = self.partition_task(controller, rest)
             task = [0, 2] + self.nameNumberConversion(zhongjian) + [12] + self.nameNumberConversion(houmian) + [14]
 
         elif "EGG" in currOrder:
             currOrder_copy = [item for item in currOrder if item not in ["EGG"]]
             rest = currOrder_copy + ["PLATE"]
-            zhongjian, houmian = self.partition_task(rest)
+            zhongjian, houmian = self.partition_task(controller, rest)
             task = [0, 17] + self.nameNumberConversion(zhongjian) + [20] + self.nameNumberConversion(houmian) + [14]
 
         else:
