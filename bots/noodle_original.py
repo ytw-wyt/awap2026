@@ -314,7 +314,7 @@ class BotPlayer:
         if self.state == 0:
             tile = controller.get_tile(controller.get_team(), kx, ky)
             if tile and isinstance(tile.item, Pan):
-                self.state = 2
+                self.state = self.tasks_queue.popleft()
             else:
                 self.state = 1
 
