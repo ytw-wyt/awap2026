@@ -196,7 +196,7 @@ class BotPlayer:
 
 
 
-    def partition_task(self, controller: RobotController, tasks) -> Tuple[List[List], List[List]]:
+    def partition_task(self, controller: RobotController, tasks) -> Tuple[set[str], set[str]]:
         cooker_to_shop = self.get_bfs_distance(controller, self.cooker_loc, self.shop_pos)
         shop_to_plate = self.get_bfs_distance(controller, self.shop_pos, self.plate_counter)
         plate_to_cooker = self.get_bfs_distance(controller, self.plate_counter, self.cooker_loc)
@@ -210,41 +210,40 @@ class BotPlayer:
         plate_to_shop = self.get_bfs_distance(controller, self.plate_counter, self.shop_pos)
 
 
-
-
+        tasks = set(tasks)
 
 
         if T > 37:
-            return ([], tasks)
+            return (set(), tasks)
         else:
-            if tasks == ["Plate"]:
-                return (tasks, [])
+            if tasks == {"PLATE"}:
+                return (tasks, set())
             else:
-                if tasks == ['Plate', 'SAUCE'] or tasks == ['Plate', 'Noodles']:
+                if tasks == {'PLATE', 'SAUCE'} or tasks == {'PLATE', 'NOODLE'}:
                     comb_T = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
                     if comb_T > 37:
-                        return (['Plate'], tasks[1:])
+                        return ({"PLATE"}, tasks - {"PLATE"})
                     else:
-                        return (tasks, [])
-                elif tasks == ['Plate', 'Onions']:
+                        return (tasks, set())
+                elif tasks == {'PLATE', 'ONION'}:
                     comb_T = cooker_to_shop + shop_to_chop + chop_to_plate + plate_to_cooker
                     if comb_T > 37:
-                        return (['Plate'], tasks[1:])
+                        return ({"PLATE"}, tasks - {"PLATE"})
                     else:
-                        return (tasks, [])
-                elif tasks == ['Plate', 'Noodles', 'Sauce']:
+                        return (tasks, set())
+                elif tasks == {'PLATE', 'NOODLE', 'SAUCE'}:
                     two_T = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
                     three_T = two_T + plate_to_shop + shop_to_plate
                     if two_T > 37:
-                        return (['Plate'], tasks[1:])
+                        return ({"PLATE"}, tasks - {"PLATE"})
                     else:
                         if three_T > 37:
-                            return (['Plate', 'Noodles'], ['Sauce'])
+                            return ({"PLATE", "NOODLE"}, {"SAUCE"})
                         else:
-                            return (tasks, [])
+                            return (tasks, set())
                     
-                        return (tasks, [])
-                elif tasks == ['Plate', 'Noodles', 'Onions', 'Sauce']:
+                        return (tasks, set())
+                elif tasks == {'PLATE', 'NOODLE', 'ONION', 'SAUCE'}:
                     plate_onion  = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_chop + chop_to_plate + plate_to_cooker
                     plate_with_one = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
                     plate_onion_with_one = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_chop + chop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
@@ -253,15 +252,15 @@ class BotPlayer:
 
 
                     if plate_onion > 37 and plate_with_one > 37:
-                        return (['Plate'], tasks[1:])
+                        return ({"PLATE"}, tasks - {"PLATE"})
                     else:
                         if plate_onion <= 37 and plate_with_one > 37:
-                            return (['Plate', 'Onions'], tasks['Noodles', 'Sauce'])
+                            return ({"PLATE", "ONION"}, tasks - {"PLATE", "ONION"})
                         elif plate_with_one <= 37 and plate_onion > 37:
-                            return (['Plate', 'Noodles'], tasks['Onions', 'Sauce'])
+                            return ({"PLATE", "NOODLE"}, tasks - {"PLATE", "NOODLE"})
                         # plate_with_one <= 37 and plate_onion <= 37:
                         else:
-                            return (['Plate', 'Noodles', 'Onions'], ['Sauce'])
+                            return ({"PLATE", "NOODLE", "ONION"}, {"SAUCE"})
 
 
     def play_turn(self, controller: RobotController):
