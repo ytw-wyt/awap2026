@@ -17,9 +17,44 @@ class BotPlayer:
         self.done = True
     
         self.tasks_queue = deque()
+        self.bot1_queue = deque()
+        self.bot2_queue = deque()
 
         self.order = []
         self.order_index = 0
+
+        self.all_counters = {} # dictionary, key: counter, value: order_num
+        # -1 means empty counter
+        self.all_cookers = [] # all cooker (x, y)
+        # plate positions dict
+        self.plate_positions = {} # key: order_num, value: (x, y)
+
+        self.bot1_order = -1
+        self.bot2_order = -1
+
+    # find all empty counters in map
+    def find_empty_counters(self, controller: RobotController) -> List[Tuple[int, int]]:
+        empty_counters = {}
+        m = controller.get_map(controller.get_team())
+        for x in range(m.width):
+            for y in range(m.height):
+                tile = m.tiles[x][y]
+                if tile.tile_name == "COUNTER":
+                    if tile.item is None:
+                        empty_counters[(x, y)] = -1
+        return empty_counters
+    
+    def find_cookers(self, controller: RobotController) -> List[Tuple[int, int]]:
+        empty_counters = {}
+        m = controller.get_map(controller.get_team())
+        for x in range(m.width):
+            for y in range(m.height):
+                tile = m.tiles[x][y]
+                if tile.tile_name == "COOKER":
+                    if tile.item is None:
+                        empty_counters.append((x, y))
+        return empty_counters
+
 
     # get list of ingredients for current order
     def get_required_ingrediants(self, controller: RobotController):
@@ -42,8 +77,11 @@ class BotPlayer:
         if not ingredients:
             # No orders available, just wait
             return
-        l = self.createTaskSequence(ingredients, self.map, controller)
-        self.tasks_queue.extend(deque(l))
+        bigl, bot1l, bot2l = self.createTaskSequence(ingredients, self.map, controller)
+        self.tasks_queue.extend(deque(bigl))
+        self.bot1_queue.extend(deque(bot1l))
+        self.bot2_queue.extend(deque(bot2l))
+
         self.state = self.tasks_queue.popleft()
         print(self.tasks_queue)
 
@@ -352,6 +390,12 @@ class BotPlayer:
 
 
     def play_turn(self, controller: RobotController):
+        # find all counters if not already found
+        if self.all_counters == []:
+            self.all_counters = self.find_empty_counters(controller)
+        if self.all_cookers == []:
+            self.all_cookers = self.find_cookers(controller)
+        
         print("task order:", self.order_index)
         if len(self.tasks_queue) == 0:
             print("hahahahah")
