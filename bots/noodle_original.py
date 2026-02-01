@@ -12,35 +12,26 @@ class BotPlayer:
         self.assembly_counter = None 
         self.cooker_loc = None
         self.my_bot_id = None
-        
-
-        self.shop_pos = self.find_nearest_tile(RobotController, 0, 0, "SHOP")
-        self.cooker_pos = self.find_nearest_tile(RobotController, 0, 0, "COOKER")
-
-        self.chop_counter = self.find_nearest_tile(RobotController, self.shop_pos(0), self.shop_pos(1), "COUNTER")
-        self.plate_counter = self.find_nearest_tile_not_current(RobotController, self.chop_counter(0), self.chop_counter(1), "COUNTER")
-        if self.plate_counter == None: 
-            self.plate_counter = self.chop_counter #ERROR: 1 counter only
-        
 
         self.state = 0
     
         self.tasks_queue = deque()
 
-        self.order = None
+        self.order = []
         self.order_index = 0
 
     # get list of ingredients for current order
-    def get_required_ingrediants(self):
-        orders = self.get_orders()  
-        neworder = orders[self.order_index]["required"] # list[foodtype]
-        for i in neworder:
-            self.order.append(i.food_name)
-
+    def get_required_ingrediants(self, controller: RobotController):
+        orders = controller.get_orders(controller.get_team())  
+        # neworder = orders[self.order_index]["required"] # list[foodtype]
+        # for i in neworder:
+        #     self.order.append(i.food_name)
+        self.order = orders[self.order_index]["required"] # list[foodtype]
+        print('order', self.order)
         self.order_index += 1
 
-    def put_task_in_queue(self):
-        l = self.createTaskSequence(self.get_required_ingrediants(), self.map)
+    def put_task_in_queue(self, controller: RobotController):
+        l = self.createTaskSequence(self.get_required_ingrediants(controller), self.map)
         self.tasks_queue.extend(deque(l))
         self.state = self.tasks_queue.popleft()
 
@@ -269,8 +260,17 @@ class BotPlayer:
 
 
     def play_turn(self, controller: RobotController):
-        if self.tasks_queue.empty():
-            self.put_task_in_queue()
+        if len(self.tasks_queue) == 0:
+
+            self.shop_pos = self.find_nearest_tile(controller, 0, 0, "SHOP")
+            self.cooker_pos = self.find_nearest_tile(controller, 0, 0, "COOKER")
+
+            self.chop_counter = self.find_nearest_tile(controller, self.shop_pos[0], self.shop_pos[1], "COUNTER")
+            self.plate_counter = self.find_nearest_tile_not_current(controller, self.chop_counter[0], self.chop_counter[1], "COUNTER")
+            if self.plate_counter == None: 
+                self.plate_counter = self.chop_counter #ERROR: 1 counter only
+            
+            self.put_task_in_queue(controller)
 
         my_bots = controller.get_team_bot_ids(controller.get_team())
         if not my_bots: return
