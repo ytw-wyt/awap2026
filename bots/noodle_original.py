@@ -497,8 +497,12 @@ class BotPlayer:
             # print holding 
             if self.move_towards(controller, bot_id, cx, cy):
                 if controller.add_food_to_plate(bot_id, cx, cy):
+                    # refresh snapshots from the engine (controller) so we print live state
+                    bot_info = controller.get_bot_state(bot_id)
+                    tile = controller.get_tile(controller.get_team(), cx, cy)
                     self.state = self.tasks_queue.popleft()
-                    print('holding item in state 11:', bot_info.get('holding'))
+                    print('after add_food_to_plate — bot holding:', bot_info.get('holding'))
+                    print('after add_food_to_plate — counter item (public):', controller.item_to_public_dict(getattr(tile, 'item', None)))
 
         #state 12: wait and take meat
         elif self.state == 12:
