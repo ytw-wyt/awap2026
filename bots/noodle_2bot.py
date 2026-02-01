@@ -585,10 +585,10 @@ class BotPlayer:
             self.cooker1_pos = self.find_nearest_tile(controller, bx1, by1, "COOKER")
             self.cooker2_pos = self.find_nearest_tile(controller, bx2, by2, "COOKER")
             
-            if not self.shop1_pos or not self.cooker1_pos or not self.shop2_pos or not self.cooker2_pos:
+            if not self.shop_pos or not self.cooker1_pos or not self.shop_pos or not self.cooker2_pos:
                 return
             
-            self.chop_counter = self.find_nearest_tile(controller, self.shop1_pos[0], self.shop1_pos[1], "COUNTER")
+            self.chop_counter = self.find_nearest_tile(controller, self.shop_pos[0], self.shop_pos[1], "COUNTER")
             if not self.chop_counter:
                 return
                 
