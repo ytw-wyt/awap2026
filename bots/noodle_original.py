@@ -219,31 +219,31 @@ class BotPlayer:
             if tasks == {"PLATE"}:
                 return (tasks, set())
             else:
-                if tasks == {'PLATE', 'SAUCE'} or tasks == {'PLATE', 'NOODLE'}:
+                if tasks == {'PLATE', 'SAUCE'} or tasks == {'PLATE', 'NOODLES'}:
                     comb_T = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
                     if comb_T > 37:
                         return ({"PLATE"}, tasks - {"PLATE"})
                     else:
                         return (tasks, set())
-                elif tasks == {'PLATE', 'ONION'}:
+                elif tasks == {'PLATE', 'ONIONS'}:
                     comb_T = cooker_to_shop + shop_to_chop + chop_to_plate + plate_to_cooker
                     if comb_T > 37:
                         return ({"PLATE"}, tasks - {"PLATE"})
                     else:
                         return (tasks, set())
-                elif tasks == {'PLATE', 'NOODLE', 'SAUCE'}:
+                elif tasks == {'PLATE', 'NOODLES', 'SAUCE'}:
                     two_T = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
                     three_T = two_T + plate_to_shop + shop_to_plate
                     if two_T > 37:
                         return ({"PLATE"}, tasks - {"PLATE"})
                     else:
                         if three_T > 37:
-                            return ({"PLATE", "NOODLE"}, {"SAUCE"})
+                            return ({"PLATE", "NOODLES"}, {"SAUCE"})
                         else:
                             return (tasks, set())
                     
                         return (tasks, set())
-                elif tasks == {'PLATE', 'NOODLE', 'ONION', 'SAUCE'}:
+                elif tasks == {'PLATE', 'NOODLES', 'ONIONS', 'SAUCE'}:
                     plate_onion  = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_chop + chop_to_plate + plate_to_cooker
                     plate_with_one = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
                     plate_onion_with_one = cooker_to_shop + shop_to_plate + plate_to_shop + shop_to_chop + chop_to_plate + plate_to_shop + shop_to_plate + plate_to_cooker
@@ -255,12 +255,12 @@ class BotPlayer:
                         return ({"PLATE"}, tasks - {"PLATE"})
                     else:
                         if plate_onion <= 37 and plate_with_one > 37:
-                            return ({"PLATE", "ONION"}, tasks - {"PLATE", "ONION"})
+                            return ({"PLATE", "ONIONS"}, tasks - {"PLATE", "ONIONS"})
                         elif plate_with_one <= 37 and plate_onion > 37:
-                            return ({"PLATE", "NOODLE"}, tasks - {"PLATE", "NOODLE"})
+                            return ({"PLATE", "NOODLES"}, tasks - {"PLATE", "NOODLES"})
                         # plate_with_one <= 37 and plate_onion <= 37:
                         else:
-                            return ({"PLATE", "NOODLE", "ONION"}, {"SAUCE"})
+                            return ({"PLATE", "NOODLES", "ONIONS"}, {"SAUCE"})
 
 
     def play_turn(self, controller: RobotController):
