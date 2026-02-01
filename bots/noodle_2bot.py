@@ -437,15 +437,9 @@ class BotPlayer:
 
     def play_turn(self, controller: RobotController):
         # find all counters if not already found
-<<<<<<< HEAD
         if self.all_counters == {}:
             self.all_counters = self.find_empty_counters(controller)
         if self.all_cookers == {}:
-=======
-        if self.all_counters == dict():
-            self.all_counters = self.find_empty_counters(controller)
-        if self.all_cookers == dict():
->>>>>>> 88ae22d9bab68b58f2689b152fb7f41e9eab591c
             self.all_cookers = self.find_cookers(controller)
         
         print("task order:", self.order_index)
@@ -480,10 +474,6 @@ class BotPlayer:
                 #self.plate_counter = self.chop_counter #ERROR: 1 counter only
             
             # Initialize cooker_loc for partition_task
-<<<<<<< HEAD
-=======
-
->>>>>>> 88ae22d9bab68b58f2689b152fb7f41e9eab591c
             if self.cookers is None:
                 self.cooker_loc = [self.cooker_loc, self.cooker_loc_egg]
                 self.find_nearest_tile(controller, bx1, by1, "COOKER")
@@ -493,8 +483,6 @@ class BotPlayer:
 
 
 
-<<<<<<< HEAD
-=======
 
             if self.cooker_loc is None:
                 self.cooker_loc = self.find_nearest_tile(controller, self.shop_pos[0], self.shop_pos[1], "COOKER")
@@ -503,7 +491,6 @@ class BotPlayer:
                 self.cooker_loc_egg = self.find_nearest_tile_not_current(controller, self.cooker_loc[0], self.cooker_loc[1], "COOKER")
             
 
->>>>>>> 88ae22d9bab68b58f2689b152fb7f41e9eab591c
             print("initial q:", self.tasks_queue)
             self.put_task_in_queue(controller)
             print("after q:", self.tasks_queue)
@@ -590,16 +577,16 @@ class BotPlayer:
         #state 5: pickup meat
         elif self.bot2_state == 5:
             if self.move_towards(controller, bot_id, cx, cy):
-                if controller.pickup(bot_id, cx, cy):
+                if controller.pickup(bot2_id, cx, cy):
                     self.state = 6
 
         #state 6: put meat on cooker
         elif self.bot2_state == 6:
-            if self.move_towards(controller, bot_id, kx, ky):
+            if self.move_towards(controller, bot2_id, kx, ky):
                 # Using the NEW logic where place() starts cooking automatically
-                if controller.place(bot_id, kx, ky):
+                if controller.place(bot2_id, kx, ky):
                     print('placed meat on cooker', self.tasks_queue)
-                    self.state = self.tasks_queue.popleft()
+                    self.bot2_state = self.bot2_queue.popleft()
 
         #state 7: start the cook, but is cooking so we just go
         elif self.bot2_state == 7:
@@ -608,18 +595,18 @@ class BotPlayer:
 
         #state 8: buy the plate
         elif self.bot2_state == 8:
-            shop_pos = self.find_nearest_tile(controller, bx, by, "SHOP")
+            shop_pos = self.find_nearest_tile(controller, bx2, by2, "SHOP")
             sx, sy = shop_pos
-            if self.move_towards(controller, bot_id, sx, sy):
+            if self.move_towards(controller, bot2_id, sx, sy):
                 if controller.get_team_money(controller.get_team()) >= ShopCosts.PLATE.buy_cost:
-                    if controller.buy(bot_id, ShopCosts.PLATE, sx, sy):
-                        self.state = 9
+                    if controller.buy(bot2_id, ShopCosts.PLATE, sx, sy):
+                        self.bot2_state = 9
 
         #state 9: put the plate on the counter
         elif self.bot2_state == 9:
-            if self.move_towards(controller, bot_id, cx, cy):
-                if controller.place(bot_id, cx, cy):
-                    bot_info = controller.get_bot_state(bot_id)
+            if self.move_towards(controller, bot2_id, cx, cy):
+                if controller.place(bot2_id, cx, cy):
+                    bot2_info = controller.get_bot_state(bot_id)
                     tile = controller.get_tile(controller.get_team(), cx, cy)
                     self.state = self.tasks_queue.popleft()
                     print('place() succeeded — bot holding:', bot_info.get('holding'))
