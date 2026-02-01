@@ -103,7 +103,6 @@ class BotPlayer:
             egg_cooker_to_cooker = self.get_bfs_distance(controller, self.cooker_loc_egg, self.cooker_loc)
             T = cooker_to_shop + shop_to_egg_cooker + egg_cooker_to_cooker
 
-<<<<<<< HEAD
             mc = currOrder.count("MEAT")
             ec = currOrder.count("EGG")
             if T < 37: 
@@ -153,18 +152,6 @@ class BotPlayer:
                         bot2tasks += [(17, self.cooker_loc), (20, self.cooker_loc)]
                 else:
                     bot2tasks = [(17, self.cooker_loc), (20, self.cooker_loc)] * ec
-=======
-            if T < 37: 
-                bot2tasks = [2, 17, 12, 20]
-            else:
-                bot2tasks = [2, 12, 17, 20]
-
-        elif "MEAT" in currOrder:
-            bot2tasks = [2, 12]
-        
-        elif "EGG" in currOrder:
-            bot2tasks = [17, 20]
->>>>>>> c3ef7615a2128768c2d16b25b5d91f833cfa5cdc
     
         else:
             bot2tasks = []
@@ -451,9 +438,9 @@ class BotPlayer:
 
     def play_turn(self, controller: RobotController):
         # find all counters if not already found
-        if self.all_counters == []:
+        if self.all_counters == {}:
             self.all_counters = self.find_empty_counters(controller)
-        if self.all_cookers == []:
+        if self.all_cookers == {}:
             self.all_cookers = self.find_cookers(controller)
         
         print("task order:", self.order_index)
@@ -488,7 +475,6 @@ class BotPlayer:
                 #self.plate_counter = self.chop_counter #ERROR: 1 counter only
             
             # Initialize cooker_loc for partition_task
-<<<<<<< HEAD
             if self.cookers is None:
                 self.cooker_loc = [self.cooker_loc, self.cooker_loc_egg]
                 self.find_nearest_tile(controller, bx1, by1, "COOKER")
@@ -498,14 +484,6 @@ class BotPlayer:
 
 
 
-=======
-            if self.cooker_loc is None:
-                self.cooker_loc = self.find_nearest_tile(controller, self.shop_pos[0], self.shop_pos[1], "COOKER")
-
-            if self.cooker_loc_egg is None:
-                self.cooker_loc_egg = self.find_nearest_tile_not_current(controller, self.cooker_loc[0], self.cooker_loc[1], "COOKER")
-            
->>>>>>> c3ef7615a2128768c2d16b25b5d91f833cfa5cdc
             print("initial q:", self.tasks_queue)
             self.put_task_in_queue(controller)
             print("after q:", self.tasks_queue)
@@ -542,51 +520,51 @@ class BotPlayer:
         if self.bot2_state in [2, 0, 17, 8] and bot_info.get('holding'):
             self.bot2_state = 16
         #####
-        8 14
-        bot1 = 10 22 27
-        bot2 - 0, 2, 17
+        #8 14
+        #bot1 = 10 22 27
+        #bot2 - 0, 2, 17
         #state 0: init + checking the pan
         if self.bot2_tate == 0:
             tile = controller.get_tile(controller.get_team(), kx, ky)
             if tile and isinstance(tile.item, Pan):
-                self.state = self.tasks_queue.popleft()
+                self.bot2_tate = self.tasks_queue.popleft()
             else:
-                self.state = 1
+                self.bot2_tate = 1
 
         #state 1: buy pan
         elif self.bot2_state == 1:
             holding = bot_info.get('holding')
             if holding: # assume it's the pan
-                if self.move_towards(controller, bot_id, kx, ky):
-                    if controller.place(bot_id, kx, ky):
-                        self.state = self.tasks_queue.popleft()
+                if self.move_towards(controller, bot2_id, kx, ky):
+                    if controller.place(bot2_id, kx, ky):
+                        self.bot2_tate = self.tasks_queue.popleft()
             else:
-                shop_pos = self.find_nearest_tile(controller, bx, by, "SHOP")
+                shop_pos = self.find_nearest_tile(controller, bx2, by2, "SHOP")
                 if not shop_pos: return
                 sx, sy = shop_pos
-                if self.move_towards(controller, bot_id, sx, sy):
+                if self.move_towards(controller, bot2_id, sx, sy):
                     if controller.get_team_money(controller.get_team()) >= ShopCosts.PAN.buy_cost:
-                        controller.buy(bot_id, ShopCosts.PAN, sx, sy)
+                        controller.buy(bot2_id, ShopCosts.PAN, sx, sy)
 
         #state 2: buy meat
         elif self.not2_state == 2:
-            shop_pos = self.find_nearest_tile(controller, bx, by, "SHOP")
+            shop_pos = self.find_nearest_tile(controller, bx2, by2, "SHOP")
             sx, sy = shop_pos
-            if self.move_towards(controller, bot_id, sx, sy):
+            if self.move_towards(controller, bot2_id, sx, sy):
                 if controller.get_team_money(controller.get_team()) >= FoodType.MEAT.buy_cost:
-                    if controller.buy(bot_id, FoodType.MEAT, sx, sy):
+                    if controller.buy(bot2_id, FoodType.MEAT, sx, sy):
                         self.state = 3
 
         #state 3: put meat on counter
         elif self.bot2_state == 3:
-            if self.move_towards(controller, bot_id, cx, cy):
-                if controller.place(bot_id, cx, cy):
+            if self.move_towards(controller, bot2_id, cx, cy):
+                if controller.place(bot2_id, cx, cy):
                     self.state = 4
 
         #state 4: chop meat
         elif self.bot2_state == 4:
-            if self.move_towards(controller, bot_id, cx, cy):
-                if controller.chop(bot_id, cx, cy):
+            if self.move_towards(controller, bot2_id, cx, cy):
+                if controller.chop(bot2_id, cx, cy):
                     self.state = 5
 
         #state 5: pickup meat
