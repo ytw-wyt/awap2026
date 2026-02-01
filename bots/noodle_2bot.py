@@ -22,6 +22,8 @@ class BotPlayer:
 
         self.order = []
         self.order_index = 0
+        self.cooker_loc_egg = None
+        self.cooker_loc = None
 
         self.all_counters = {} # dictionary, key: counter, value: order_num
         # -1 means empty counter
@@ -85,33 +87,33 @@ class BotPlayer:
         self.state = self.tasks_queue.popleft()
         print(self.tasks_queue)
 
+    #Now breaks an order into two task sequences. One for bot 1 and one for bot 2 
     def createTaskSequence(self, currOrder, map, controller: RobotController):
+
         if "EGG" in currOrder and "MEAT" in currOrder:
-            currOrder_copy = [item for item in currOrder if item not in ["EGG", "MEAT"]]
-            rest = currOrder_copy + ["PLATE"]
-            zhongjian1, houmian1 = self.partition_task(controller, rest)
-            newhoumian1 = list(houmian1)
-            print(newhoumian1)
-            zhongjian2, houmian2 = self.partition_task(controller, newhoumian1)
-            print("success partitioning")
-            task = [0, 2] + self.nameNumberConversion(zhongjian1) + [12, 17] + self.nameNumberConversion(zhongjian2) + [20] + self.nameNumberConversion(houmian2) + [14]
-        
+
+            cooker_to_shop = self.get_bfs_distance(controller, self.cooker_loc, self.shop_pos)
+            shop_to_egg_cooker = self.get_bfs_distance(controller, self.shop_pos, self.cooker_loc_egg)
+            egg_cooker_to_cooker = self.get_bfs_distance(controller, self.cooker_loc_egg, self.cooker_loc)
+            T = cooker_to_shop + shop_to_egg_cooker + egg_cooker_to_cooker
+
+            if T < 37: 
+                bot2tasks = [2, 17, 12, 20]
+            else:
+                bot2tasks = [2, 12, 17, 20]
+
         elif "MEAT" in currOrder:
-            currOrder_copy = [item for item in currOrder if item not in ["MEAT"]]
-            rest = currOrder_copy + ["PLATE"]
-            zhongjian, houmian = self.partition_task(controller, rest)
-            task = [0, 2] + self.nameNumberConversion(zhongjian) + [12] + self.nameNumberConversion(houmian) + [14]
-
-        elif "EGG" in currOrder:
-            currOrder_copy = [item for item in currOrder if item not in ["EGG"]]
-            rest = currOrder_copy + ["PLATE"]
-            zhongjian, houmian = self.partition_task(controller, rest)
-            task = [0, 17] + self.nameNumberConversion(zhongjian) + [20] + self.nameNumberConversion(houmian) + [14]
-
-        else:
-            task = [0] + self.nameNumberConversion(["PLATE"] + currOrder) + [14]
+            bot2tasks = [2, 12]
         
-        return task
+        elif "EGG" in currOrder:
+            bot2tasks = [17, 20]
+    
+        else:
+            bot2tasks = []
+        
+        bot1tasks = self.nameNumberConversion([item for item in currOrder if item not in ["MEAT", "EGG"]])
+        
+        return bot1tasks, bot2tasks
     
     def nameNumberConversion(self, tasks):
         l = []
@@ -421,7 +423,11 @@ class BotPlayer:
             
             # Initialize cooker_loc for partition_task
             if self.cooker_loc is None:
-                self.cooker_loc = self.find_nearest_tile(controller, bx, by, "COOKER")
+                self.cooker_loc = self.find_nearest_tile(controller, self.shop_pos[0], self.shop_pos[1], "COOKER")
+
+            if self.cooker_loc_egg is None:
+                self.cooker_loc_egg = self.find_nearest_tile_not_current(controller, self.cooker_loc[0], self.cooker_loc[1], "COOKER")
+            
             print("initial q:", self.tasks_queue)
             self.put_task_in_queue(controller)
             print("after q:", self.tasks_queue)
