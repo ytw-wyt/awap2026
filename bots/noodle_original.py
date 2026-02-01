@@ -22,17 +22,24 @@ class BotPlayer:
 
     # get list of ingredients for current order
     def get_required_ingrediants(self, controller: RobotController):
-        orders = controller.get_orders(controller.get_team())  
-        # neworder = orders[self.order_index]["required"] # list[foodtype]
-        # for i in neworder:
-        #     self.order.append(i.food_name)
+        orders = controller.get_orders(controller.get_team())
+        if not orders or self.order_index >= len(orders):
+            # No more orders available, reset or return empty
+            self.order_index = 0
+            if not orders:
+                return []
+        
         self.order = orders[self.order_index]["required"] # list[foodtype]
         # print('order', self.order)
         self.order_index += 1
         return self.order
 
     def put_task_in_queue(self, controller: RobotController):
-        l = self.createTaskSequence(self.get_required_ingrediants(controller), self.map, controller)
+        ingredients = self.get_required_ingrediants(controller)
+        if not ingredients:
+            # No orders available, just wait
+            return
+        l = self.createTaskSequence(ingredients, self.map, controller)
         self.tasks_queue.extend(deque(l))
         self.state = self.tasks_queue.popleft()
 
